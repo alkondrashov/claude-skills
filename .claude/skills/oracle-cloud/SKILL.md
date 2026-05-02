@@ -18,6 +18,7 @@ All sensitive files live in `~/.oci/` — never committed to git.
 | `~/.oci/oci_api_key_public.pem` | API public key — registered in Oracle Console under your user → API Keys |
 | `~/.oci/actual_budget_ssh` | SSH private key for the actual-budget VM, chmod 600 |
 | `~/.oci/actual_budget_ssh.pub` | SSH public key — baked into the VM at launch |
+| `~/.oci/actual_budget_password` | Actual Budget server password, chmod 600 |
 
 To inspect config values without printing them:
 ```bash
@@ -32,7 +33,7 @@ Rather than hardcoding IDs, look them up by name:
 
 ```bash
 # Compartment ID (= tenancy for a free account's root compartment)
-COMPARTMENT=$(awk '/^tenancy/{print $3}' ~/.oci/config)
+COMPARTMENT=$(awk -F'=' '/^tenancy/{gsub(/ /,"",$2); print $2}' ~/.oci/config)
 
 # VCN ID
 VCN_ID=$(oci network vcn list --compartment-id $COMPARTMENT --output json 2>/dev/null \
@@ -62,8 +63,8 @@ echo "VM IP: $VM_IP"
 
 ```bash
 # Verify auth
-COMPARTMENT=$(awk '/^tenancy/{print $3}' ~/.oci/config)
-USER_OCID=$(awk '/^user/{print $3}' ~/.oci/config)
+COMPARTMENT=$(awk -F'=' '/^tenancy/{gsub(/ /,"",$2); print $2}' ~/.oci/config)
+USER_OCID=$(awk -F'=' '/^user/{gsub(/ /,"",$2); print $2}' ~/.oci/config)
 oci iam user get --user-id $USER_OCID 2>/dev/null
 
 # Suppress harmless SyntaxWarnings from OCI CLI
@@ -90,7 +91,7 @@ Named resources — look up IDs dynamically as shown above.
 
 SSH into the VM (IP resolved at runtime):
 ```bash
-VM_IP=$(oci compute instance list --compartment-id $(awk '/^tenancy/{print $3}' ~/.oci/config) \
+VM_IP=$(oci compute instance list --compartment-id $(awk -F'=' '/^tenancy/{gsub(/ /,"",$2); print $2}' ~/.oci/config) \
   --display-name actual-budget --output json 2>/dev/null \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['data'][0]['id'])" \
   | xargs -I{} oci compute instance list-vnics --instance-id {} --output json 2>/dev/null \
@@ -123,7 +124,7 @@ ssh -i ~/.oci/actual_budget_ssh ubuntu@$VM_IP "
 - Data persisted in `~/actual-data` on the VM
 - nginx config: `/etc/nginx/sites-available/actual-budget`
 - TLS cert: `/etc/nginx/ssl/actual.{crt,key}` (self-signed, valid 10 years)
-- Required headers set by nginx: `Cross-Origin-Opener-Policy: same-origin`, `Cross-Origin-Embedder-Policy: require-corp`
+- `Cross-Origin-Opener-Policy` and `Cross-Origin-Embedder-Policy` headers are sent by the actual-budget app itself — nginx does not add them (removing duplicates broke SharedArrayBuffer)
 
 ## Always Free Tier Limits
 
@@ -140,7 +141,7 @@ ssh -i ~/.oci/actual_budget_ssh ubuntu@$VM_IP "
 ```bash
 # List all compute instances
 oci compute instance list \
-  --compartment-id $(awk '/^tenancy/{print $3}' ~/.oci/config) \
+  --compartment-id $(awk -F'=' '/^tenancy/{gsub(/ /,"",$2); print $2}' ~/.oci/config) \
   --output json 2>/dev/null \
   | python3 -c "import json,sys; [print(i['display-name'], i['lifecycle-state'], i['shape']) for i in json.load(sys.stdin)['data']]"
 
@@ -153,7 +154,7 @@ oci network security-list update \
 # Launch an A1 ARM instance (try all ADs — capacity often exhausted)
 for AD in "Zcsc:UK-LONDON-1-AD-1" "Zcsc:UK-LONDON-1-AD-2" "Zcsc:UK-LONDON-1-AD-3"; do
   oci compute instance launch \
-    --compartment-id $(awk '/^tenancy/{print $3}' ~/.oci/config) \
+    --compartment-id $(awk -F'=' '/^tenancy/{gsub(/ /,"",$2); print $2}' ~/.oci/config) \
     --availability-domain "$AD" \
     --shape "VM.Standard.A1.Flex" \
     --shape-config '{"ocpus":2,"memoryInGBs":4}' \
