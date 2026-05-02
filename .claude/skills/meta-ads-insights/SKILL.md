@@ -24,10 +24,16 @@ https://graph.facebook.com/v21.0/
 
 ## Common Operations
 
-### Generate an app access token (client_credentials flow)
+### Get an access token
+
+Ad account data requires a **user access token** with `ads_read` permission. App access tokens (client_credentials) will not work for campaign or insights queries.
+
+Generate a user access token via the [Meta Token Tools](https://developers.facebook.com/tools/explorer/) with `ads_read` scope, then update `META_ACCESS_TOKEN` in `~/.claude/settings.json`.
+
+To check if the current token is valid:
 
 ```bash
-curl "https://graph.facebook.com/oauth/access_token?client_id=$META_APP_ID&client_secret=$META_APP_SECRET&grant_type=client_credentials"
+curl "https://graph.facebook.com/v21.0/me?access_token=$META_ACCESS_TOKEN"
 ```
 
 ### List all campaigns
