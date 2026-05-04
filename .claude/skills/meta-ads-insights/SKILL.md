@@ -48,13 +48,25 @@ curl "https://graph.facebook.com/v21.0/$META_AD_ACCOUNT_ID/campaigns?fields=id,n
 curl "https://graph.facebook.com/v21.0/{campaign_id}/insights?fields=actions&date_preset=maximum&access_token=$META_ACCESS_TOKEN"
 ```
 
+### Get campaign-level insights for a date range (all campaigns)
+
+```bash
+curl "https://graph.facebook.com/v21.0/$META_AD_ACCOUNT_ID/insights?fields=campaign_name,actions,spend,impressions,reach&time_range=%7B%22since%22%3A%222026-04-01%22%2C%22until%22%3A%222026-04-30%22%7D&level=campaign&access_token=$META_ACCESS_TOKEN"
+```
+
+Use `level=campaign` to break results down per campaign. Replace `time_range` dates as needed (URL-encoded JSON).
+
 ### Key messaging action types
 
 | Action type | Meaning |
 |---|---|
 | `onsite_conversion.total_messaging_connection` | Total messaging connections |
 | `onsite_conversion.messaging_conversation_started_7d` | Conversations started (7-day) |
+| `onsite_conversion.messaging_conversation_replied_7d` | Conversations replied (7-day) |
 | `onsite_conversion.messaging_first_reply` | First replies from business |
+| `onsite_conversion.messaging_user_depth_2_message_send` | Reached 2nd exchange |
+| `onsite_conversion.messaging_user_depth_3_message_send` | Reached 3rd exchange |
+| `onsite_conversion.messaging_user_depth_5_message_send` | Reached 5th exchange |
 | `onsite_conversion.lead` | Leads generated |
 
 ## Python Usage (facebook-business SDK)
